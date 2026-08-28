@@ -1,7 +1,10 @@
 #pragma once
 
 #include <Arduino.h>
-#include <MqttClient.h>
+#include <WiFi.h>
+#include <MQTTClient.h>
+
+typedef void (*MessageCallback)(String &topic, String &payload);
 
 class MqttManager
 {
@@ -9,21 +12,28 @@ public:
     MqttManager();
 
     void begin();
-    void loop();
+    void loop(bool wifiConncted);
 
     void onConnected();
-    void onDisconnect();
+    void reconnect();
+    void disconnect();
     void publishClaim(const char *payload);
     void publishState(const char *payload);
     void publishChangeApply(const char *payload);
-
+    bool isConnected();
     void setMessageCallback(MessageCallback callback);
 
 private:
-    MqttClient *_mqttClient;
-    const char *mqtt_broker = "mqtt.eclipse.org";
+    WiFiClient _netClient;
+    MQTTClient _mqttClient;
+
+    const char *mqtt_broker = "test.mosquitto.org";
+    const int mqtt_port = 1883;
     const char *client_id = "monitoring123";
     const char *mqtt_username = "";
     const char *mqtt_password = "";
-    MessageCallback _messageCallback;
+
+    MessageCallback _messageCallback = nullptr;
+    uint8_t _attempConnection = 0;
+    unsigned long _lastReconnectAttempt = 0;
 };

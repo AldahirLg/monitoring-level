@@ -18,8 +18,8 @@ void WiFiManager::begin()
 
     // CASO 2: Hay credenciales -> Intentar conectar
     WiFi.mode(WIFI_STA);
-    WiFi.setSleep(false);
-    WiFi.setTxPower(WIFI_POWER_19_5dBm);
+    // WiFi.setSleep(false);
+    // WiFi.setTxPower(WIFI_POWER_19_5dBm);
     Serial.printf("[WiFi] Intentando conectar a: %s\n", ssid.c_str());
     WiFi.begin(ssid.c_str(), pass.c_str());
     const unsigned long TIMEOUT_MS = 10000;
@@ -46,7 +46,6 @@ void WiFiManager::begin()
     {
         Serial.println("[WiFi] No se puedo conectar");
     }
-    _server.begin();
 }
 
 void WiFiManager::loop()

@@ -8,10 +8,9 @@ public:
     Sensor(uint8_t triggerPin, uint8_t echoPin);
     bool measure();
     void start();
-    bool measuring = false;
+    bool isMeasuring();
     bool sensorState();
-    void setValues(int height, int minValue, int maxValue, bool notification);
-    int getPercent();
+    float getDistance();
 
 private:
     NewPing _sonar;
@@ -22,7 +21,5 @@ private:
     int _attempts = 0;
     float _distance = 0;
     bool _sensorState = false;
-    float getDistance();
-
-    int _height = 0;
+    bool _measuring = false;
 };

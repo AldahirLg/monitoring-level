@@ -10,7 +10,7 @@ void Sensor::start()
     _attempts = 0;
     _sum = 0;
     _pingTimer = millis();
-    measuring = true;
+    _measuring = true;
 }
 
 bool Sensor::measure()
@@ -27,7 +27,7 @@ bool Sensor::measure()
         Serial.println(" cm");
         if (_attempts >= 10)
         {
-            measuring = false;
+            _measuring = false;
             if (_sum != 0)
             {
                 _distance = _sum / 10.0;
@@ -53,6 +53,12 @@ bool Sensor::sensorState()
     return _sensorState;
 }
 
+bool Sensor::isMeasuring()
+{
+    return _measuring;
+}
+
+/*
 int Sensor::getPercent()
 {
     if (_height < 30)
@@ -65,4 +71,4 @@ int Sensor::getPercent()
     int percent = ((_height - value) * 100) / (_height - 30);
 
     return constrain(percent, 0, 100);
-}
+}*/
