@@ -13,13 +13,9 @@ void Sensor::start()
     measuring = true;
 }
 
-void Sensor::measure()
+bool Sensor::measure()
 {
     unsigned long currentTime = millis();
-
-    if (!measuring)
-        return;
-
     if (currentTime - _pingTimer >= _pingSpeed)
     {
         _pingTimer = currentTime;
@@ -41,8 +37,10 @@ void Sensor::measure()
             {
                 _sensorState = false;
             }
+            return true;
         }
     }
+    return false;
 }
 
 float Sensor::getDistance()

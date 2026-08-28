@@ -6,10 +6,9 @@ class Sensor
 {
 public:
     Sensor(uint8_t triggerPin, uint8_t echoPin);
-    void measure();
+    bool measure();
     void start();
     bool measuring = false;
-
     bool sensorState();
     void setValues(int height, int minValue, int maxValue, bool notification);
     int getPercent();
