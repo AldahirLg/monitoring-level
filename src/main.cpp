@@ -24,6 +24,15 @@ Monitoring monitoring(sensor);
 
 State state;
 bool psConfigured = false;
+uint8_t resetPin = 4;
+
+void resetCredentials() {
+    if (digitalRead(resetPin) == LOW) {
+        wifiManager.resetSettings();
+        delay(1000);
+        ESP.restart();
+    }
+}
 
 void autoMode()
 {
@@ -81,18 +90,20 @@ void modeSleep()
     delay(50);
     esp_wifi_stop();
     delay(50);
+    esp_sleep_enable_ext0_wakeup((gpio_num_t)resetPin, 0);
     esp_sleep_enable_timer_wakeup(5 * 1000000);
     esp_light_sleep_start();
     esp_wifi_start();
     delay(50);
+    resetCredentials();
     state = State::CONNECTION;
 }
 
 void setup()
 {
     Serial.begin(115200);
+    pinMode(resetPin, INPUT_PULLUP);
     wifiManager.begin();
-
     if (wifiManager.getStatus() == WiFiManagerStatus::CONNECTED)
     {
         state = State::CONNECTION;
