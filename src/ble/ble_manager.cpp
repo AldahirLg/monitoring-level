@@ -8,7 +8,7 @@ BleManager::BleManager(WiFiManager &wifiManager)
 void BleManager::begin()
 {
     Serial.println("[BLE] Inicializando provisionamiento por BLE...");
-    BLEDevice::init("Medidor");
+    BLEDevice::init("Monitor de Nivel");
     BLEDevice::setMTU(185);
     _server = BLEDevice::createServer();
     _server->setCallbacks(this);
@@ -26,7 +26,7 @@ void BleManager::begin()
     service->start();
     BLEAdvertising *advertising = BLEDevice::getAdvertising();
     advertising->addServiceUUID(BLE_SERVICE_UUID);
-    advertising->setScanResponse(false);
+    advertising->setScanResponse(true);
     advertising->setMinPreferred(0x06);
     advertising->setMinPreferred(0x12);
     BLEDevice::startAdvertising();
@@ -182,17 +182,29 @@ void BleManager::handleCommandLine(const String &line)
     Serial.printf("[BLE] Provisioning iniciado para SSID=%s\n", ssid);
 }
 
-void BleManager::onClientConnected()
+void BleManager::onConnect(BLEServer *pServer)
 {
+    (void)pServer;
+
     _clientConnected = true;
+
     Serial.println("[BLE] Cliente conectado.");
 }
 
-void BleManager::onClientDisconnected()
+void BleManager::onWrite(BLECharacteristic *characteristic)
 {
+    enqueueRx(characteristic->getValue());
+}
+
+void BleManager::onDisconnect(BLEServer *pServer)
+{
+    (void)pServer;
+
     _clientConnected = false;
     _rxBuffer = "";
+
     Serial.println("[BLE] Cliente desconectado. Reanudando advertising...");
+
     BLEDevice::startAdvertising();
 }
 

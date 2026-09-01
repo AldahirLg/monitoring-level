@@ -26,8 +26,12 @@ public:
 
     void handleRxChunk(const std::string &value);
     void handleCommandLine(const String &line);
-    void onClientConnected();
-    void onClientDisconnected();
+
+    void onConnect(BLEServer *pServer) override;
+    void onDisconnect(BLEServer *pServer) override;
+
+    void onWrite(BLECharacteristic *characteristic) override;
+
     void enqueueRx(const std::string &value);
 
 private:

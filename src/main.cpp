@@ -26,8 +26,10 @@ State state;
 bool psConfigured = false;
 uint8_t resetPin = 4;
 
-void resetCredentials() {
-    if (digitalRead(resetPin) == LOW) {
+void resetCredentials()
+{
+    if (digitalRead(resetPin) == LOW)
+    {
         wifiManager.resetSettings();
         delay(1000);
         ESP.restart();
@@ -132,6 +134,9 @@ void loop()
     case State::SLEEP:
         modeSleep();
         break;
+    case State::PROVISIONING:
+        bleManager.loop();
+        wifiManager.loop();
     default:
         break;
     }
