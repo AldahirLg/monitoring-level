@@ -54,4 +54,7 @@ private:
 
     void notifyJsonLine(const JsonDocument &doc);
     void notifyStatus(const char *status, const char *message = nullptr);
+
+    void handleGetDeviceId();
+    void handleProvision(JsonDocument &doc);
 };

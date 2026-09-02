@@ -17,11 +17,12 @@ public:
     void onConnected();
     void reconnect();
     void disconnect();
-    void publishClaim(const char *payload);
+    bool publishClaim(const char *payload, const char *deviceId);
     void publishState(const char *payload);
     void publishChangeApply(const char *payload);
     bool isConnected();
     void setMessageCallback(MessageCallback callback);
+    void setDeviceId(String deviceId);
 
 private:
     WiFiClient _netClient;
@@ -36,4 +37,7 @@ private:
     MessageCallback _messageCallback = nullptr;
     uint8_t _attempConnection = 0;
     unsigned long _lastReconnectAttempt = 0;
+
+    String _deviceId;
+    bool _hasBegun = false;
 };

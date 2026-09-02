@@ -4,6 +4,7 @@ MqttManager::MqttManager()
 {
 }
 
+// mqtt_manager.cpp
 void MqttManager::begin()
 {
     if (_netClient.connected())
@@ -18,12 +19,33 @@ void MqttManager::begin()
         _mqttClient.onMessage(_messageCallback);
     }
 
+    _hasBegun = true;
     reconnect();
     Serial.println("[MQTT] Iniciado");
 }
 
+void MqttManager::loop(bool wifiConnected)
+{
+    if (!_hasBegun)
+        return;
+
+    _mqttClient.loop();
+
+    if (wifiConnected && !isConnected())
+    {
+        unsigned long now = millis();
+        if (now - _lastReconnectAttempt > 5000)
+        {
+            _lastReconnectAttempt = now;
+            reconnect();
+        }
+    }
+}
+
 void MqttManager::reconnect()
 {
+    if (!_hasBegun)
+        return;
     Serial.print("[MQTT] Conectando...");
 
     if (_mqttClient.connect(client_id, mqtt_username, mqtt_password))
@@ -48,32 +70,23 @@ bool MqttManager::isConnected()
     return _mqttClient.connected();
 }
 
-void MqttManager::loop(bool wifiConnected)
-{
-
-    _mqttClient.loop();
-
-    if (wifiConnected && !isConnected())
-    {
-        unsigned long now = millis();
-        if (now - _lastReconnectAttempt > 5000)
-        {
-            _lastReconnectAttempt = now;
-            reconnect();
-        }
-    }
-}
-
 void MqttManager::onConnected()
 {
-    _mqttClient.subscribe("claim/result", 1);
-    _mqttClient.subscribe("monitoring_level/response", 1);
+    String claimResultTopic = "claim/" + _deviceId + "/result";
+    _mqttClient.subscribe(claimResultTopic.c_str(), 1);
+    Serial.printf("[MQTT] Suscrito a: %s\n", claimResultTopic.c_str());
+
+    String responseResultTopic = "monitoring_level/" + _deviceId + "/response";
+    _mqttClient.subscribe(responseResultTopic.c_str(), 1);
+    Serial.printf("[MQTT] Suscrito a: %s\n", responseResultTopic.c_str());
 }
 
-void MqttManager::publishClaim(const char *payload)
+bool MqttManager::publishClaim(const char *payload, const char *deviceId)
 {
-    const char *topic = "claim/";
-    _mqttClient.publish(topic, payload, false, 0);
+    String topic = "claim/";
+    topic += deviceId;
+
+    return _mqttClient.publish(topic.c_str(), payload, false, 1);
 }
 
 void MqttManager::publishState(const char *payload)
@@ -87,6 +100,11 @@ void MqttManager::publishChangeApply(const char *payload)
 {
     const char *topic = "level_monitoring/apply";
     _mqttClient.publish(topic, payload, false, 0);
+}
+
+void MqttManager::setDeviceId(String deviceId)
+{
+    _deviceId = deviceId;
 }
 
 void MqttManager::setMessageCallback(MessageCallback callback)

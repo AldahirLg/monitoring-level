@@ -83,12 +83,13 @@ void WiFiManager::loop()
             }
         }
     }
-    if (_shouldRestart && millis() - _restartTimer > _restartDelayMs)
+    /*if (_shouldRestart && millis() - _restartTimer > _restartDelayMs)
     {
         Serial.println("Reiniciando el dispositivo...");
-        delay(100);
+        saveSesion();
+        delay(1000);
         ESP.restart();
-    }
+    }*/
 }
 
 WiFiManagerStatus WiFiManager::getStatus()
@@ -115,6 +116,10 @@ void WiFiManager::resetSettings()
     _preferences.clear();
     _preferences.end();
     Serial.println("Credenciales WiFi borradas.");
+    _preferences.begin("sesion", false);
+    _preferences.clear();
+    _preferences.end();
+    Serial.println("Sesion Borrada.");
 }
 
 void WiFiManager::resetSettingsAndRestart(uint32_t delayMs)
@@ -125,7 +130,7 @@ void WiFiManager::resetSettingsAndRestart(uint32_t delayMs)
     _restartTimer = millis();
 }
 
-bool WiFiManager::startProvisioningTest(const String &ssid, const String &pass)
+bool WiFiManager::startProvisioningTest(const String &ssid, const String &pass, String claimToken)
 {
     String ssidSanitized = ssid;
     ssidSanitized.trim();
@@ -141,7 +146,7 @@ bool WiFiManager::startProvisioningTest(const String &ssid, const String &pass)
     _tempPass = pass;
     _testRetryCount = 0;
     _lastFailureReason = "";
-
+    _claimToken = claimToken;
     Serial.printf("Probando nuevas credenciales: SSID=%s\n", _tempSSID.c_str());
     _modoConfig = true;
     WiFi.mode(WIFI_STA);
@@ -168,8 +173,11 @@ String WiFiManager::getLastFailureReason() const
 String WiFiManager::getConnectedMac() const
 {
     String mac = WiFi.macAddress();
-    mac.replace(":", "");
     return mac;
+}
+String WiFiManager::getDeviceUid() const
+{
+    return "Monitor-" + getConnectedMac();
 }
 
 String WiFiManager::getLocalIP() const
@@ -223,6 +231,26 @@ void WiFiManager::saveCredentials(String ssid, String pass)
     _preferences.putString("pass", pass);
     _preferences.end();
     Serial.println("Credenciales guardadas en NVS.");
+}
+
+void WiFiManager::saveSesion()
+{
+    _preferences.begin("sesion", false);
+    _preferences.putBool("claimed", true);
+    _preferences.end();
+    Serial.println("Sesion guardadas en NVS.");
+    delay(1000);
+    ESP.restart();
+}
+
+void WiFiManager::setClaimToken(const String claimToken)
+{
+    _claimToken = claimToken;
+}
+
+String WiFiManager::getClaimToken()
+{
+    return _claimToken;
 }
 
 String WiFiManager::getInfoWiFi()

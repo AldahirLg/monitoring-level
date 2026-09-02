@@ -30,7 +30,7 @@ public:
     void resetSettings();
     void resetSettingsAndRestart(uint32_t delayMs = 500);
 
-    bool startProvisioningTest(const String &ssid, const String &pass);
+    bool startProvisioningTest(const String &ssid, const String &pass, String claimToken);
     ConnectionState getConnectionState() const;
     String getLastFailureReason() const;
     String getSavedSSID() const;
@@ -38,6 +38,10 @@ public:
     String getConnectedMac() const;
     String getLocalIP() const;
     String getInfoWiFi();
+    void saveSesion();
+    void setClaimToken(const String claimToken);
+    String getClaimToken();
+    String getDeviceUid() const;
     AsyncWebServer &getServer() { return _server; }
 
 private:
@@ -62,4 +66,6 @@ private:
 
     unsigned long _wifiTestTimeOutMs = 10000;
     uint8_t _wifiTestMaxRetries = 1;
+
+    String _claimToken;
 };

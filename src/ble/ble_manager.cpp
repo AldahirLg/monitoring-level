@@ -136,16 +136,56 @@ void BleManager::handleCommandLine(const String &line)
     }
 
     const char *type = doc["type"] | "";
-    if (String(type) != "provision")
+
+    if (String(type) == "get_device_id")
     {
-        notifyStatus("error", "unsupported_type");
-        Serial.printf("[BLE] Tipo de comando no soportado: %s\n", type);
+        handleGetDeviceId();
         return;
     }
 
+    if (String(type) == "provision")
+    {
+        handleProvision(doc);
+        return;
+    }
+
+    notifyStatus("error", "unsupported_type");
+    Serial.printf("[BLE] Tipo de comando no soportado: %s\n", type);
+}
+
+// ============================================================
+// COMANDO: get_device_id
+// ============================================================
+// Request:  {"type":"get_device_id"}
+// Response: {"status":"device_id","device_uid":"Monitor-6CC840901EEC"}
+//
+// La app debe llamar a este comando ANTES de solicitar el claim
+// token al backend, para usar el identificador REAL del hardware
+// (derivado de WiFi.macAddress()) y no el identificador BLE que
+// entrega el sistema operativo del teléfono (que en iOS ni
+// siquiera es una MAC real).
+// ============================================================
+void BleManager::handleGetDeviceId()
+{
+    JsonDocument doc;
+    doc["status"] = "device_id";
+    doc["device_uid"] = _wifiManager.getDeviceUid();
+    notifyJsonLine(doc);
+    Serial.printf("[BLE] device_uid enviado: %s\n", _wifiManager.getDeviceUid().c_str());
+}
+
+// ============================================================
+// COMANDO: provision
+// ============================================================
+// Request:  {"type":"provision","ssid":"...","password":"...","token_claim":"..."}
+// Response: notificaciones de progreso vía notifyStatus() (working,
+// connecting, testing, success, failed)
+// ============================================================
+void BleManager::handleProvision(JsonDocument &doc)
+{
     const char *ssid = doc["ssid"] | "";
     const char *password = doc["password"] | "";
-    const char *tokenClain = doc["token_claim"] | "";
+    const char *claimToken = doc["token_claim"] | "";
 
     if (String(ssid).length() == 0)
     {
@@ -154,7 +194,7 @@ void BleManager::handleCommandLine(const String &line)
         return;
     }
 
-    if (String(tokenClain).length() == 0)
+    if (String(claimToken).length() == 0)
     {
         notifyStatus("error", "token_claim_empty");
         Serial.println("[BLE] token_claim vacío en comando provision.");
@@ -168,7 +208,7 @@ void BleManager::handleCommandLine(const String &line)
         return;
     }
 
-    if (!_wifiManager.startProvisioningTest(String(ssid), String(password)))
+    if (!_wifiManager.startProvisioningTest(String(ssid), String(password), String(claimToken)))
     {
         notifyStatus("failed", "cannot_start_wifi_test");
         Serial.println("[BLE] No se pudo iniciar la prueba WiFi.");

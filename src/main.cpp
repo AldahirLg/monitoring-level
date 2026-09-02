@@ -11,10 +11,25 @@
 enum State
 {
     PROVISIONING,
+    CLAIM,
     CONNECTION,
     AUTO,
     SLEEP,
 };
+enum class ClaimStep
+{
+    IDLE,
+    WAIT_MQTT,
+    PUBLISHING,
+    WAIT_ACK,
+    DONE
+};
+
+ClaimStep claimStep = ClaimStep::IDLE;
+String pendingPayload;
+String pendingDeviceId;
+unsigned long claimSentAt = 0;
+const unsigned long CLAIM_ACK_TIMEOUT_MS = 6000;
 
 Sensor sensor(14, 13);
 WiFiManager wifiManager;
@@ -60,6 +75,47 @@ void autoMode()
     }
 }
 
+void handleMqttMessage(String &topic, String &payload)
+{
+    Serial.printf("[MQTT] Mensaje en [%s]: %s\n", topic.c_str(), payload.c_str());
+
+    if (topic.endsWith("/result"))
+    {
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, payload);
+
+        if (error)
+        {
+            Serial.printf("[MQTT] Error al parsear JSON: %s\n", error.c_str());
+            return;
+        }
+        bool success = doc["success"] | false;
+        const char *status = doc["status"] | "UNKNOWN";
+
+        if (success && String(status) == "CLAIMED")
+        {
+            Serial.println("¡Dispositivo vinculado con éxito (CLAIMED)!");
+            wifiManager.saveSesion();
+        }
+        else if (!success)
+        {
+            wifiManager.resetSettings();
+            ESP.restart();
+        }
+        else if (String(status) == "EXPIRED")
+        {
+            Serial.println("El token de vinculación ha expirado (EXPIRED).");
+            wifiManager.resetSettings();
+            delay(1000);
+            ESP.restart();
+        }
+        else
+        {
+            Serial.printf("Proceso de claim rechazado o con estado desconocido: %s\n", status);
+        }
+    }
+}
+
 void connection()
 {
     if (!wifiManager.isConnected())
@@ -69,16 +125,80 @@ void connection()
 
     if (wifiManager.isConnected() && !psConfigured)
     {
-        // esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
         psConfigured = true;
     }
 
     if (wifiManager.isConnected() && !mqttManager.isConnected())
     {
+        String deviceId = wifiManager.getDeviceUid(); // antes: "Monitor-" + mac
+        String claimToken = wifiManager.getClaimToken();
+
+        mqttManager.setDeviceId(deviceId);
+        mqttManager.setMessageCallback(handleMqttMessage);
         mqttManager.begin();
     }
 
     state = State::AUTO;
+}
+
+void claim()
+{
+    if (!wifiManager.isConnected())
+        return;
+
+    if (claimStep == ClaimStep::IDLE)
+    {
+        String deviceId = wifiManager.getDeviceUid();
+        String claimToken = wifiManager.getClaimToken();
+
+        mqttManager.setDeviceId(deviceId);
+        mqttManager.setMessageCallback(handleMqttMessage);
+        mqttManager.begin();
+
+        JsonDocument doc;
+        doc["claim_token"] = claimToken;
+        doc["device_uid"] = deviceId;
+        doc["device_type"] = "Monitor";
+        doc["device_version"] = 1;
+        doc["firmware_version"] = 1;
+        doc["hardware_version"] = 1;
+        serializeJson(doc, pendingPayload);
+
+        pendingDeviceId = deviceId;
+
+        claimStep = ClaimStep::WAIT_MQTT;
+    }
+
+    if (claimStep == ClaimStep::WAIT_MQTT || claimStep == ClaimStep::PUBLISHING)
+    {
+        if (!mqttManager.isConnected())
+        {
+            return;
+        }
+
+        bool sent = mqttManager.publishClaim(pendingPayload.c_str(), pendingDeviceId.c_str());
+
+        if (sent)
+        {
+            Serial.println("[CLAIM] Payload enviado, esperando confirmacion del servidor...");
+            claimSentAt = millis();
+            claimStep = ClaimStep::WAIT_ACK;
+        }
+        else
+        {
+            Serial.println("[CLAIM] publish() fallo, reintentando en el siguiente tick.");
+            claimStep = ClaimStep::WAIT_MQTT;
+        }
+    }
+
+    if (claimStep == ClaimStep::WAIT_ACK)
+    {
+        if (millis() - claimSentAt > CLAIM_ACK_TIMEOUT_MS)
+        {
+            Serial.println("[CLAIM] Sin respuesta del servidor, reintentando publish...");
+            claimStep = ClaimStep::WAIT_MQTT; // vuelve a publicar
+        }
+    }
 }
 
 void modeSleep()
@@ -137,6 +257,17 @@ void loop()
     case State::PROVISIONING:
         bleManager.loop();
         wifiManager.loop();
+        if (wifiManager.getStatus() == WiFiManagerStatus::CONNECTED)
+        {
+            state = State::CLAIM;
+        }
+        break;
+    case State::CLAIM:
+        bleManager.loop();
+        wifiManager.loop();
+        claim();
+        mqttManager.loop(wifiManager.isConnected());
+        break;
     default:
         break;
     }
