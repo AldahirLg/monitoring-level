@@ -18,7 +18,7 @@ public:
     void reconnect();
     void disconnect();
     bool publishClaim(const char *payload, const char *deviceId);
-    void publishState(const char *payload);
+    void publishState(const char *payload, const char *deviceId);
     void publishChangeApply(const char *payload);
     bool isConnected();
     void setMessageCallback(MessageCallback callback);

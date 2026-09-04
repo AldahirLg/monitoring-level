@@ -89,9 +89,10 @@ bool MqttManager::publishClaim(const char *payload, const char *deviceId)
     return _mqttClient.publish(topic.c_str(), payload, false, 1);
 }
 
-void MqttManager::publishState(const char *payload)
+void MqttManager::publishState(const char *payload, const char *deviceId)
 {
-    const char *topic = "level_monitoring/";
+    String topic = "medidor_nivel/";
+    topic += deviceId;
     Serial.println(payload);
     _mqttClient.publish(topic, payload, false, 1);
 }

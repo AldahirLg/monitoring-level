@@ -8,7 +8,7 @@ BleManager::BleManager(WiFiManager &wifiManager)
 void BleManager::begin()
 {
     Serial.println("[BLE] Inicializando provisionamiento por BLE...");
-    BLEDevice::init("Monitor de Nivel");
+    BLEDevice::init("Medidor de nivel");
     BLEDevice::setMTU(185);
     _server = BLEDevice::createServer();
     _server->setCallbacks(this);
@@ -153,18 +153,6 @@ void BleManager::handleCommandLine(const String &line)
     Serial.printf("[BLE] Tipo de comando no soportado: %s\n", type);
 }
 
-// ============================================================
-// COMANDO: get_device_id
-// ============================================================
-// Request:  {"type":"get_device_id"}
-// Response: {"status":"device_id","device_uid":"Monitor-6CC840901EEC"}
-//
-// La app debe llamar a este comando ANTES de solicitar el claim
-// token al backend, para usar el identificador REAL del hardware
-// (derivado de WiFi.macAddress()) y no el identificador BLE que
-// entrega el sistema operativo del teléfono (que en iOS ni
-// siquiera es una MAC real).
-// ============================================================
 void BleManager::handleGetDeviceId()
 {
     JsonDocument doc;
@@ -174,13 +162,6 @@ void BleManager::handleGetDeviceId()
     Serial.printf("[BLE] device_uid enviado: %s\n", _wifiManager.getDeviceUid().c_str());
 }
 
-// ============================================================
-// COMANDO: provision
-// ============================================================
-// Request:  {"type":"provision","ssid":"...","password":"...","token_claim":"..."}
-// Response: notificaciones de progreso vía notifyStatus() (working,
-// connecting, testing, success, failed)
-// ============================================================
 void BleManager::handleProvision(JsonDocument &doc)
 {
     const char *ssid = doc["ssid"] | "";

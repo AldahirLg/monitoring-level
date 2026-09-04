@@ -177,7 +177,7 @@ String WiFiManager::getConnectedMac() const
 }
 String WiFiManager::getDeviceUid() const
 {
-    return "Monitor-" + getConnectedMac();
+    return "Medidor-" + getConnectedMac();
 }
 
 String WiFiManager::getLocalIP() const
