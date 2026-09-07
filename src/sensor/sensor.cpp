@@ -1,7 +1,7 @@
 #include "sensor.h"
 
 Sensor::Sensor(uint8_t triggerPin, uint8_t echoPin)
-    : _sonar(triggerPin, echoPin, _maxDistance), _pingTimer(0)
+    : _sonar(triggerPin, echoPin, 400), _pingTimer(0)
 {
 }
 
@@ -10,7 +10,6 @@ void Sensor::start()
     _attempts = 0;
     _sum = 0;
     _pingTimer = millis();
-    _measuring = true;
 }
 
 bool Sensor::measure()
@@ -27,20 +26,54 @@ bool Sensor::measure()
         Serial.println(" cm");
         if (_attempts >= 10)
         {
-            _measuring = false;
             if (_sum != 0)
             {
-                _distance = _sum / 10.0;
+                _distance = round(_sum / 10.0);
                 _sensorState = true;
             }
             else
             {
                 _sensorState = false;
             }
+
             return true;
         }
     }
     return false;
+}
+
+void Sensor::idle()
+{
+    start();
+    _state = SensorMode::MEASURING;
+}
+
+void Sensor::measuring()
+{
+    if (measure())
+    {
+        _state = SensorMode::DONE;
+    }
+}
+
+void Sensor::loop()
+{
+    switch (_state)
+    {
+    case SensorMode::IDLE:
+        idle();
+        break;
+    case SensorMode::MEASURING:
+        measuring();
+        break;
+    case SensorMode::DONE:
+        break;
+    }
+}
+
+void Sensor::reset()
+{
+    _state = SensorMode::IDLE;
 }
 
 float Sensor::getDistance()
@@ -53,22 +86,7 @@ bool Sensor::sensorState()
     return _sensorState;
 }
 
-bool Sensor::isMeasuring()
+SensorMode Sensor::state()
 {
-    return _measuring;
+    return _state;
 }
-
-/*
-int Sensor::getPercent()
-{
-    if (_height < 30)
-        return 0;
-
-    int value = getDistance();
-
-    value = constrain(value, 30, _height);
-
-    int percent = ((_height - value) * 100) / (_height - 30);
-
-    return constrain(percent, 0, 100);
-}*/

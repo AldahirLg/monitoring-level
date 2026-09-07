@@ -3,7 +3,6 @@
 #include "wifi/wifi_manager.h"
 #include "mqtt/mqtt_manager.h"
 #include "ble/ble_manager.h"
-#include "monitoring/monitoring.h"
 #include "claim/claim.h"
 #include <ArduinoJson.h>
 #include "esp_wifi.h"
@@ -22,7 +21,6 @@ Sensor sensor(14, 13);
 WiFiManager wifiManager;
 BleManager bleManager(wifiManager);
 MqttManager mqttManager;
-Monitoring monitoring(sensor);
 Claim claimHandler(wifiManager, mqttManager);
 
 State state;
@@ -48,15 +46,15 @@ void handleMqttMessage(String &topic, String &payload)
 
 void autoMode()
 {
-    monitoring.loop();
+    sensor.loop();
     mqttManager.loop(wifiManager.isConnected());
 
-    if (monitoring.state() == MonitorSate::END)
+    if (sensor.state() == SensorMode::DONE)
     {
         JsonDocument doc;
 
-        doc["level"] = monitoring.getPercent();
-        doc["sensor_state"] = monitoring.getSensorState();
+        doc["level"] = sensor.getDistance();
+        doc["sensor_state"] = sensor.sensorState();
         doc["batery"] = 100;
 
         String payload;
@@ -66,7 +64,7 @@ void autoMode()
         {
             mqttManager.publishState(payload.c_str(), deviceId.c_str());
         }
-        monitoring.reset();
+        sensor.reset();
         state = State::SLEEP;
     }
 }
