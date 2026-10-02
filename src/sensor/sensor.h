@@ -34,4 +34,5 @@ private:
     int _attempts = 0;
     float _distance = 0;
     bool _sensorState = false;
+    int _offset = 30;
 };

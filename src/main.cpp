@@ -53,9 +53,9 @@ void autoMode()
     {
         JsonDocument doc;
 
-        doc["level"] = sensor.getDistance();
-        doc["sensor_state"] = sensor.sensorState();
-        doc["batery"] = 100;
+        doc["status"]["level"] = sensor.getDistance();
+        doc["status"]["sensorState"] = sensor.sensorState();
+        doc["status"]["battery"] = 100;
 
         String payload;
 

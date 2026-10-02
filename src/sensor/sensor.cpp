@@ -28,7 +28,9 @@ bool Sensor::measure()
         {
             if (_sum != 0)
             {
-                _distance = round(_sum / 10.0);
+                float raw = _sum / 10.0;
+                float corrected = raw - _offset;
+                _distance = round(corrected < 0 ? 0 : corrected);
                 _sensorState = true;
             }
             else
@@ -78,7 +80,7 @@ void Sensor::reset()
 
 float Sensor::getDistance()
 {
-    return _distance;
+    return (int)_distance;
 }
 
 bool Sensor::sensorState()

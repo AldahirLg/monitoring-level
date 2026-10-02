@@ -129,13 +129,13 @@ void MqttManager::publishState(
     const char *payload,
     const char *deviceId)
 {
-    String topic = "medidor/";
-    topic += deviceId;
+    String topic = String("medidor/") + deviceId + "/data";
 
+    Serial.print("[MQTT] Payload eneviado: ");
     Serial.println(payload);
 
-    _mqttClient.publish(
-        topic,
+    bool success = _mqttClient.publish(
+        topic.c_str(),
         payload,
         false,
         1);
