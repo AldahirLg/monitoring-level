@@ -32,7 +32,7 @@ void Claim::buildPayload()
     JsonDocument doc;
     doc["claim_token"] = claimToken;
     doc["device_uid"] = deviceId;
-    doc["device_type"] = "Medidor";
+    doc["device_type"] = "medidor";
     doc["device_version"] = 1;
     doc["firmware_version"] = 1;
     doc["hardware_version"] = 1;
