@@ -83,7 +83,7 @@ void connection()
 
     if (wifiManager.isConnected() && !mqttManager.isConnected())
     {
-        String deviceId = wifiManager.getDeviceUid();
+        deviceId = wifiManager.getDeviceUid();
 
         mqttManager.setDeviceId(deviceId);
         mqttManager.setMessageCallback(handleMqttMessage);
