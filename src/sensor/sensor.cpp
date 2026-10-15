@@ -61,22 +61,30 @@ void Sensor::processSamples()
     float raw = _sum / (float)_validAttempts;
     float corrected = fmaxf(0.0f, raw - _offset);
 
-    // La ventana actual es valida.
     _sensorState = true;
 
-    // Guardar la medicion corregida en el historial.
+    // Inicializar el filtro con la primera medición válida.
+    if (!_filterInitialized)
+    {
+        _filteredDistance = corrected;
+        _filterInitialized = true;
+    }
+
+    // Actualizar la mediana móvil.
     updateHistory(roundf(corrected));
+    float median = getMedian();
 
-    // Publicar la mediana del historial.
-    _distance = getMedian();
+    // Acercar gradualmente la distancia a la mediana.
+    _filteredDistance +=
+        _filterAlpha * (median - _filteredDistance);
 
-    Serial.print("Promedio de ventana: ");
+    _distance = roundf(_filteredDistance);
+
+    Serial.print("Promedio ventana: ");
     Serial.print(corrected);
-    Serial.print(" cm | Historial: ");
-    Serial.print(_historyCount);
-    Serial.print("/");
-    Serial.print(HISTORY_SIZE);
-    Serial.print(" | Mediana historica: ");
+    Serial.print(" cm | Mediana móvil: ");
+    Serial.print(median);
+    Serial.print(" cm | Distancia filtrada: ");
     Serial.print(_distance);
     Serial.println(" cm");
 }

@@ -52,4 +52,8 @@ private:
     bool _sensorState = false;
 
     int _offset = 30;
+
+    float _filteredDistance = 0;
+    float _filterAlpha = 0.5f;
+    bool _filterInitialized = false;
 };
